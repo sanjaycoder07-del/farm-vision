@@ -12,6 +12,8 @@ const dmSerifDisplay = DM_Serif_Display({
   subsets: ["latin"],
 });
 
+import { AuthProvider } from "../context/AuthContext";
+
 export const metadata = {
   title: "Farm Vision",
   description: "Advanced Agentic Coding Farm Vision Platform",
@@ -21,7 +23,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${outfit.variable} ${dmSerifDisplay.variable}`}>
       <body className="font-sans bg-gray-50 text-gray-900 antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

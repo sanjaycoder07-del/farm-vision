@@ -1,4 +1,8 @@
 fastapi
 uvicorn
 pydantic
+pandas
+scikit-learn
+joblib
+requests
 prisma

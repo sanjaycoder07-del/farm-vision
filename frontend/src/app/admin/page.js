@@ -1,11 +1,28 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatINR } from '../../utils/formatCurrency';
 import Sidebar from '../../components/Sidebar';
 import StatCard from '../../components/StatCard';
 import Badge from '../../components/Badge';
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${API_BASE}/api/admin/stats`)
+      .then((res) => res.json())
+      .then((data) => {
+        setStats(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch admin stats:', err);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900">
       <Sidebar role="admin" plan="basic" user={{ name: "Admin User" }} />
@@ -19,9 +36,9 @@ export default function AdminDashboard() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard label="Total Farmers" value="1,245" sub="+12% this month" icon="👥" />
-            <StatCard label="Active Listings" value="342" sub="In last 24h" icon="🛒" />
-            <StatCard label="Marketplace Volume" value={formatINR(452000)} sub="Total value" icon="💰" />
+            <StatCard label="Total Farmers" value={stats?.totalFarmers ? stats.totalFarmers.toLocaleString() : "1,245"} sub="+12% this month" icon="👥" />
+            <StatCard label="Active Listings" value={stats?.activeListings ? stats.activeListings.toString() : "342"} sub="In last 24h" icon="🛒" />
+            <StatCard label="Marketplace Volume" value={formatINR(stats?.totalMarketplaceVolume || 452000)} sub="Total value" icon="💰" />
           </div>
 
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">

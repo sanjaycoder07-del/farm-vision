@@ -1,27 +1,61 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Badge from '../../components/Badge';
 
 export default function AgentDashboard() {
-  const [tasks, setTasks] = useState([
-    { id: '101', farmer: 'Ramesh Singh', crop: 'Pumpkin', status: 'Pending Verification', distance: '15km' },
-    { id: '102', farmer: 'Suresh Kumar', crop: 'Potato', status: 'Pending Verification', distance: '8km' },
-  ]);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTask, setActiveTask] = useState(null);
   const [report, setReport] = useState({ isSpoiled: 'No', condition: 'Good', notes: '' });
+
+  const fetchAgentClaims = () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${API_BASE}/api/agent/claims`)
+      .then((res) => res.json())
+      .then((data) => {
+        setTasks(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch agent claims:', err);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchAgentClaims();
+  }, []);
 
   const startVerification = (task) => {
     setActiveTask(task);
   };
 
-  const submitReport = (e) => {
+  const submitReport = async (e) => {
     e.preventDefault();
-    // Simulate updating database and granting "Verified" badge
-    setTasks(tasks.filter(t => t.id !== activeTask.id));
-    setActiveTask(null);
-    setReport({ isSpoiled: 'No', condition: 'Good', notes: '' }); // Reset form
-    alert('Verification Report Submitted successfully!');
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    try {
+      const res = await fetch(`${API_BASE}/api/agent/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim_id: activeTask.id,
+          storage_condition: report.condition,
+          is_spoiled: report.isSpoiled === 'Yes',
+          agent_notes: report.notes || 'Inspection completed',
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      setActiveTask(null);
+      setReport({ isSpoiled: 'No', condition: 'Good', notes: '' });
+      alert('Verification Report Submitted successfully!');
+      fetchAgentClaims();
+    } catch (err) {
+      console.error('Failed to submit verification report:', err);
+      alert('Error submitting verification report to backend.');
+    }
   };
 
   return (
