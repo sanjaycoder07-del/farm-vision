@@ -1,0 +1,96 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+enum Role {
+  FARMER
+  BUYER
+  INSURANCE_AGENT
+  ADMIN
+}
+
+enum CropType {
+  PUMPKIN
+  POTATO
+  BEETROOT
+}
+
+enum ListingStatus {
+  AVAILABLE
+  SOLD
+  REMOVED
+}
+
+enum ClaimStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id               String             @id @default(uuid())
+  phoneNumber      String?            @unique
+  email            String?            @unique
+  role             Role
+  isVerified       Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  
+  // Relations
+  listings         CropListing[]      @relation("FarmerListings")
+  purchases        CropListing[]      @relation("BuyerPurchases")
+  claims           InsuranceClaim[]
+  verifications    VerificationReport[]
+}
+
+model CropListing {
+  id                 String        @id @default(uuid())
+  farmerId           String
+  buyerId            String?
+  cropType           CropType
+  daysPassed         Int
+  latitude           Float
+  longitude          Float
+  priceAtListing     Float?
+  optimalSellingDate DateTime?
+  status             ListingStatus @default(AVAILABLE)
+  createdAt          DateTime      @default(now())
+
+  // Relations
+  farmer             User          @relation("FarmerListings", fields: [farmerId], references: [id])
+  buyer              User?         @relation("BuyerPurchases", fields: [buyerId], references: [id])
+  insuranceClaim     InsuranceClaim?
+}
+
+model InsuranceClaim {
+  id                 String        @id @default(uuid())
+  listingId          String        @unique
+  farmerId           String
+  claimDate          DateTime      @default(now())
+  status             ClaimStatus   @default(PENDING)
+  spoilageReason     String?
+  
+  // Relations
+  listing            CropListing   @relation(fields: [listingId], references: [id])
+  farmer             User          @relation(fields: [farmerId], references: [id])
+  verificationReport VerificationReport?
+}
+
+model VerificationReport {
+  id                 String         @id @default(uuid())
+  claimId            String         @unique
+  agentId            String
+  verificationDate   DateTime       @default(now())
+  storageCondition   String
+  isSpoiled          Boolean
+  agentNotes         String?
+
+  // Relations
+  claim              InsuranceClaim @relation(fields: [claimId], references: [id])
+  agent              User           @relation(fields: [agentId], references: [id])
+}
